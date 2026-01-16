@@ -42,21 +42,6 @@ export default function AccesiblePage() {
     initializeAudioForMobile,
   } = useAudioController(textProcessor.textChunks);
 
-  // Extraer texto accesible del boletín
-  const getAccessibleText = () => {
-    if (!boletinData) return "";
-    let text = `Boletín Nº ${boletinData.numero_edicion} - ${boletinData.titulo_edicion}\nFecha: ${boletinData.fecha_publicacion}\n\n`;
-    boletinData.documentos_rel?.forEach((doc: any, idx: number) => {
-      text += `Documento ${idx + 1}: ${doc.categoria?.nombre || ""} - ${doc.numero_documento}\n`;
-      text += `Expediente: ${doc.expediente?.numero_expediente || ""}\n`;
-      doc.articulos?.forEach((art: any) => {
-        text += `Artículo ${art.numero_articulo} (${art.tipo_articulo}):\n${art.contenido}\n\n`;
-      });
-      text += "\n";
-    });
-    return text;
-  };
-
   // Cargar boletín y procesar texto
   useEffect(() => {
     if (!boletinId) return;
@@ -72,13 +57,10 @@ export default function AccesiblePage() {
   }, [boletinId]);
 
   const getAccessibleTextFromData = (data: any) => {
-    console.log("Texto procesado:", JSON.stringify(textProcessor.processedText));
-
     if (!data) return "";
-    let text = `=== BOLETÍN OFICIAL MUNICIPAL ===\n\n`;
+    let text = `=== BOLETÍN OFICIAL MUNICIPAL ===\n`;
     text += `Edición Nº ${data.numero_edicion} - ${data.titulo_edicion}\n`;
     text += `Fecha de publicación: ${data.fecha_publicacion}\n\n`;
-
     if (data.documentos_rel?.length) {
       data.documentos_rel.forEach((doc: any, idx: number) => {
         text += `--- Documento ${idx + 1} ---\n`;
@@ -112,10 +94,8 @@ export default function AccesiblePage() {
     } else {
       text += "No hay documentos en este boletín.\n";
     }
-
     return text;
   };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[0.4fr_1.5fr] gap-6 p-6">
       {/* === SIDEBAR izq === */}
@@ -165,17 +145,11 @@ export default function AccesiblePage() {
                 role="document"
                 aria-label="Contenido accesible"
               >
-                {textProcessor.processedText.split("\n").map((line, i) => (
-                  <span key={i}>
-                    {line}
-                    <br />
-                  </span>
-                ))}
+                {textProcessor.processedText}
               </div>
             )}
           </CardBody>
         </Card>
-
         {/* Controles de audio desktop */}
         <DesktopAudioControls
           voiceSettings={voiceSettings}
@@ -192,7 +166,6 @@ export default function AccesiblePage() {
           onSkipBackward={skipBackward}
           onTestAudio={testAudio}
         />
-
         {/* Controles de audio móvil */}
         <MobileAudioPlayer
           voiceSettings={voiceSettings}
@@ -211,7 +184,6 @@ export default function AccesiblePage() {
           onTestAudio={testAudio}
           onInitializeAudio={initializeAudioForMobile}
         />
-
         {/* Debug info */}
         <DebugInfo debugInfo={debugInfo} />
       </div>

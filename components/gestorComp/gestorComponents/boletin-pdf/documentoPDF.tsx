@@ -2,7 +2,7 @@ import React from "react";
 import { Page, Text, View } from "@react-pdf/renderer";
 import { styles } from "./styles";
 import type { Documento, Boletin, ConfiguracionPDF, Articulo } from "../../../types/boletin";
-
+import { CabeceraPDF } from "./cabecera";
 interface DocumentoPDFProps {
   doc: Documento & { articulos?: Articulo[]; categoria?: string };
   idx: number;
@@ -17,11 +17,17 @@ export const DocumentoPDF: React.FC<DocumentoPDFProps> = ({
   config 
 }) => (
   <Page size="A4" style={styles.page}>
-    <View style={styles.header} fixed>
+    {/* <View style={styles.header} fixed>
       <Text>{config.cabecera}</Text>
       <Text>Edición Nº {boletin.numero_edicion}</Text>
-    </View>
-
+    </View> */}
+    <CabeceraPDF
+        key={doc.id}
+        doc={doc}
+        idx={idx}
+        boletin={boletin}
+        config={config}
+    />
     <Text style={styles.docTitle}>Documento Nº {doc.numero_documento}</Text>
     <Text style={styles.docSubtitle}>{doc.numero_completo}</Text>
 

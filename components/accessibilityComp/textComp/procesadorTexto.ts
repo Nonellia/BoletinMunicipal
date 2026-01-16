@@ -19,7 +19,7 @@ export const useTextProcessor = () => {
       // Remover marcadores de página
       .replace(/--- Página \d+ ---/g, "")
       // Normalizar espacios en blanco
-      .replace(/\s+/g, " ")
+      // .replace(/\s+/g, " ")
       // Remover caracteres especiales problemáticos
       .replace(/[^\w\s.,;:!?¿¡\-()áéíóúüñÁÉÍÓÚÜÑ]/g, " ")
       // Limpiar puntuación múltiple
@@ -27,9 +27,9 @@ export const useTextProcessor = () => {
       // Remover números de página sueltos
       .replace(/^\d+\s*$/gm, "")
       // Normalizar saltos de línea
-      .replace(/\n+/g, " ")
+      // .replace(/\n+/g, " ")
       // Limpiar espacios múltiples
-      .replace(/\s{2,}/g, " ")
+      // .replace(/\s{2,}/g, " ")
       .trim()
 
     return cleanedText

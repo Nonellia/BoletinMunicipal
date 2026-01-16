@@ -1,57 +1,42 @@
-export type Boletin = {
-  id: string;
-  numero?: string;
-  titulo?: string;
-  descripcion?: string;
-  fecha: string;
-  fecha_publicacion?: string;
-  // fecha_creacion?: string;
-  categoria: string;
-  archivoUrl?: string;
-  archivo?: string;
-  formatos?: string[];
-  destacado?: boolean;
-  accesible?: boolean;
-  storagePath?: string;
-}
-export interface Documento {
+// ============================================
+// 1. TIPOS ACTUALIZADOS (types/Boletin.ts)
+// ============================================
+
+export interface BoletinPDF {
   id: number;
-  numero_documento: number;
-  numero_completo: string;
-  fecha_emision?: string;
-  lugar_emision?: string;
-  estado?: string;
-  paginas?: string;
-  contenido?: string;
-  id_boletin: number;
-  articulos?: Articulo[];
-  categoria?: string;
+  numero_edicion: number;
+  edicion: number;
+  tipo_boletin: string;
+  fecha_publicacion: string;
+  estado: string;
+}
+
+export interface ArticuloPDF {
+  id: number;
+  numero: string;
+  fecha: string;
+  contenido: string;
+  orden: number;
+}
+
+export interface CategoriaPDF {
+  id: number;
+  nombre: string;
+  abreviatura: string;
+  orden: number;
+  articulos: ArticuloPDF[];
+}
+
+export interface PDFData {
+  boletin: BoletinPDF;
+  categorias: CategoriaPDF[];
+  totalArticulos: number;
 }
 
 export interface ConfiguracionPDF {
-  portadaTitulo: string;
-  portadaSubtitulo: string;
-  cabecera: string;
-  piePagina: string;
   showPortada: boolean;
   showIndice: boolean;
-}
-
-export interface Articulo {
-  id: number;
-  documento_id: number;
-  contenido: string;
-  numero_articulo?: string;
-  tipo_articulo?: string;
-  titulo?: string;
-  prefijo?: string;
-  // otros campos si es necesario
-}
-
-interface PreviewSectionProps {
-  showPreview: boolean;
-  selectedBoletin: Boletin | null;
-  config: ConfiguracionPDF;
-  selectedDocsData: Documento[];
-  articulos: Articulo[]; // <-- agrega esto
+  showCabecera: boolean;
+  piePagina: string;
+  logoPath?: string;
 }

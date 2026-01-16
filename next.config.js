@@ -7,6 +7,8 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true, // 👈 ignora errores de ESLint
   },
+    reactStrictMode: true,
+  swcMinify: true,
 };
 
 export default nextConfig;
