@@ -6,6 +6,7 @@ import BoletinesForm from './components/BoletinesForm';
 import CategoriasForm from './components/CategoriasForm';
 import ResumenesForm from './components/ResumenesForm';
 import Dashboard from './components/Dashboard';
+import PublicarBoletines from './components/PublicarBoletines';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -29,7 +30,7 @@ export default function Home() {
               : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
           >
-            Panel de control
+            📊 Panel de control
           </button>
           <button
             onClick={() => setActiveTab('tipos')}
@@ -38,7 +39,7 @@ export default function Home() {
               : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
           >
-            Tipos de Boletín
+            📋 Tipos de Boletín
           </button>
           <button
             onClick={() => setActiveTab('boletines')}
@@ -47,7 +48,7 @@ export default function Home() {
               : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
           >
-            Boletines
+            📄 Boletines
           </button>
           <button
             onClick={() => setActiveTab('categorias')}
@@ -56,7 +57,7 @@ export default function Home() {
               : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
           >
-            Categorías
+            🏷️ Categorías
           </button>
           <button
             onClick={() => setActiveTab('resumenes')}
@@ -65,18 +66,28 @@ export default function Home() {
               : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
           >
-            Documentos
+            📝 Documentos
+          </button>
+          <button
+            onClick={() => setActiveTab('publicar')}
+            className={`px-4 py-2 rounded-lg transition-all font-medium ${activeTab === 'publicar'
+              ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-pink-200'
+              }`}
+          >
+            🚀 Publicar Boletines
           </button>
         </div>
       </div>
 
       {/* Contenido de la pestaña activa */}
-      <div className={`${activeTab === 'dashboard' ? 'max-w-6xl' : 'max-w-8xl px-20'} mx-auto`}>
+      <div className={`${activeTab === 'dashboard' || activeTab === 'publicar' ? 'max-w-6xl' : 'max-w-8xl px-20'} mx-auto`}>
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'tipos' && <TiposBoletinForm />}
         {activeTab === 'boletines' && <BoletinesForm />}
         {activeTab === 'categorias' && <CategoriasForm />}
         {activeTab === 'resumenes' && <ResumenesForm />}
+        {activeTab === 'publicar' && <PublicarBoletines />}
       </div>
     </div>
   );

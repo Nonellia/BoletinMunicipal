@@ -49,25 +49,54 @@ export function FiltersSidebar({
   ];
   const dayNames = ["L", "M", "M", "J", "V", "S", "D"];
 
-  // Función para formatear fecha como YYYY-MM-DD
-  const formatDate = (date: Date): string => {
+  // Función para formatear fecha como YYYY-MM-DD (solo la parte de fecha, sin hora)
+  const formatDateOnly = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
-  // Obtener las fechas que tienen boletines
+  // Función para parsear fecha del servidor y extraer solo la parte de fecha
+  const parseDateFromServer = (dateString: string): string => {
+    try {
+      // Si el string ya es YYYY-MM-DD, devolverlo
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+      
+      // Si tiene formato ISO (con T o Z), extraer solo la parte de fecha
+      if (dateString.includes('T') || dateString.includes('Z')) {
+        return dateString.split('T')[0];
+      }
+      
+      // Intentar parsear y formatear
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      
+      return formatDateOnly(date);
+    } catch {
+      return "";
+    }
+  };
+
+  // Obtener fechas de boletines (solo comparando strings YYYY-MM-DD)
   const getBulletinDates = (): Set<string> => {
     const dates = new Set<string>();
+    
     boletines.forEach((boletin) => {
-      if (boletin.fecha_publicacion) {
-        // Evitar desfase por zona horaria
-        const [year, month, day] = boletin.fecha_publicacion.slice(0, 10).split("-");
-        const date = new Date(Number(year), Number(month) - 1, Number(day));
-        dates.add(formatDate(date));
+      if (boletin.fecha) {
+        try {
+          const dateStr = parseDateFromServer(boletin.fecha);
+          if (dateStr) {
+            dates.add(dateStr);
+          }
+        } catch (error) {
+          console.error("Error procesando fecha:", boletin.fecha, error);
+        }
       }
     });
+    
     return dates;
   };
 
@@ -84,36 +113,46 @@ export function FiltersSidebar({
     const daysInMonth = lastDay.getDate();
 
     const days: CalendarDay[] = [];
+    
+    // Obtener fecha de hoy
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = formatDateOnly(today);
 
     // Días del mes anterior
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = 0; i < startOffset; i++) {
       const dayNum = prevMonthLastDay - startOffset + i + 1;
       const date = new Date(year, month - 1, dayNum);
-      const dateStr = formatDate(date);
+      const dateStr = formatDateOnly(date);
+      
+      const isSelected = fechaSeleccionada ? 
+        formatDateOnly(fechaSeleccionada) === dateStr : false;
+      
       days.push({
         date,
         day: dayNum,
         isCurrentMonth: false,
         hasBulletin: bulletinDates.has(dateStr),
-        isSelected: fechaSeleccionada ? formatDate(date) === formatDate(fechaSeleccionada) : false,
-        isToday: formatDate(date) === formatDate(today),
+        isSelected,
+        isToday: dateStr === todayStr,
       });
     }
 
     // Días del mes actual
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
-      const dateStr = formatDate(date);
+      const dateStr = formatDateOnly(date);
+      
+      const isSelected = fechaSeleccionada ? 
+        formatDateOnly(fechaSeleccionada) === dateStr : false;
+      
       days.push({
         date,
         day: i,
         isCurrentMonth: true,
         hasBulletin: bulletinDates.has(dateStr),
-        isSelected: fechaSeleccionada ? formatDate(date) === formatDate(fechaSeleccionada) : false,
-        isToday: formatDate(date) === formatDate(today),
+        isSelected,
+        isToday: dateStr === todayStr,
       });
     }
 
@@ -122,14 +161,18 @@ export function FiltersSidebar({
     const nextMonthDays = totalCells - days.length;
     for (let i = 1; i <= nextMonthDays; i++) {
       const date = new Date(year, month + 1, i);
-      const dateStr = formatDate(date);
+      const dateStr = formatDateOnly(date);
+      
+      const isSelected = fechaSeleccionada ? 
+        formatDateOnly(fechaSeleccionada) === dateStr : false;
+      
       days.push({
         date,
         day: i,
         isCurrentMonth: false,
         hasBulletin: bulletinDates.has(dateStr),
-        isSelected: fechaSeleccionada ? formatDate(date) === formatDate(fechaSeleccionada) : false,
-        isToday: formatDate(date) === formatDate(today),
+        isSelected,
+        isToday: dateStr === todayStr,
       });
     }
 
@@ -196,7 +239,7 @@ export function FiltersSidebar({
                 </svg>
                 Filtros
               </h4>
-              {/* Icono "i" con tooltip */}
+              {/* Icono "?" con tooltip */}
               <div className="relative group">
                 <div className="w-5 h-5 flex items-center justify-center rounded-full bg-[#2B97D6] text-white text-xs font-bold cursor-default transition-transform duration-200 hover:scale-110">
                   ?

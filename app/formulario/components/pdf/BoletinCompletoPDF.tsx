@@ -51,12 +51,129 @@ interface Props {
   data: PDFData;
   config: ConfiguracionPDF;
 }
+const normalizarHTML = (html: string) => {
+  return html
+    // saltos estructurales
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<p[^>]*>/gi, "\n")
+
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<div[^>]*>/gi, "\n")
+
+    .replace(/<br\s*\/?>/gi, "\n")
+
+    // listas
+    .replace(/<\/ul>/gi, "\n")
+    .replace(/<ul>/gi, "\n")
+    .replace(/<li>/gi, "\n<li>")
+    .replace(/<\/li>/gi, "")
+
+    // links
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "LINK::$1::$2")
+
+    // espacios HTML
+    .replace(/&nbsp;/gi, " ")
+
+    // limpiar atributos
+    .replace(/style="[^"]*"/gi, "")
+
+    // limpiar basura
+    .replace(/\n{2,}/g, "\n")
+
+    .trim();
+};
+
+const renderHTMLToPDF = (html: string) => {
+  const limpio = normalizarHTML(html);
+
+  const bloques = limpio
+    .split("\n")
+    .map(b => b.trim())
+    .filter(Boolean);
+
+  return bloques.map((bloque, i) => {
+    // LINK
+    if (bloque.startsWith("LINK::")) {
+      const [, url, text] = bloque.split("::");
+      return (
+        <Text key={i} style={[styles.ordenanzaContenido, styles.ordenanzaLink]}>
+          {text || url}
+        </Text>
+      );
+    }
+
+    // LISTA
+    if (bloque.startsWith("<li>") || bloque.startsWith("•") || /^\d+\./.test(bloque)) {
+      return (
+        <Text key={i} style={styles.ordenanzaListItem}>
+          • {bloque.replace(/<\/?li>/gi, "").replace(/^•/, "").trim()}
+        </Text>
+      );
+    }
+
+    // BOLD
+    if (bloque.match(/<b>/i)) {
+      return (
+        <Text key={i} style={[styles.ordenanzaContenido, styles.ordenanzaBold]}>
+          {bloque.replace(/<\/?b>/gi, "")}
+        </Text>
+      );
+    }
+
+    // ITALIC
+    if (bloque.match(/<i>/i)) {
+      return (
+        <Text key={i} style={[styles.ordenanzaContenido, styles.ordenanzaItalic]}>
+          {bloque.replace(/<\/?i>/gi, "")}
+        </Text>
+      );
+    }
+
+    // TEXTO NORMAL
+    return (
+      <Text key={i} style={styles.ordenanzaContenido}>
+        {bloque.replace(/<\/?[^>]+>/g, "")}
+      </Text>
+    );
+  });
+};
+
 
 // ============================================
 // ESTILOS
 // ============================================
 const styles = StyleSheet.create({
   // PÁGINA GENERAL
+  
+ordenanzaBold: {
+  fontFamily: "Helvetica-Bold",
+},
+
+ordenanzaItalic: {
+  fontFamily: "Helvetica-Oblique",
+},
+
+ordenanzaLink: {
+  color: "#2563EB",
+  textDecoration: "underline",
+},
+
+ordenanzaListItem: {
+  marginLeft: 14,
+  fontSize: 11,
+  lineHeight: 1.6,
+},
+
+ordenanzaCenter: {
+  textAlign: "center",
+},
+
+// ordenanzaListItem: {
+//   marginLeft: 12,
+//   fontSize: 11,
+//   lineHeight: 1.6,
+// },
+
   ordenanzaHeaderBar: {
     backgroundColor: "#2B97D6",
     paddingVertical: 14,
@@ -745,6 +862,7 @@ const IndicePDF = ({ categorias, boletin, tipoBoletin }: any) => {
   );
 };
 
+
 // ============================================
 // FUNCIÓN LIMPIAR HTML
 // ============================================
@@ -790,15 +908,13 @@ const PaginaCategoriaPDF = ({
           </Text>
         </View>
         {categoria.resumenes.map((resumen: Resumen, index: number) => {
-          const contenidoLimpio = limpiarHTML(resumen.contenido);
-          const lineas = contenidoLimpio.split("\n").filter((l) => l.trim());
 
-          const numeroMatch = contenidoLimpio.match(/Nº\s*(\d+)/);
+          const numeroMatch = resumen.contenido.match(/Nº\s*(\d+)/);
           const numero = numeroMatch
             ? numeroMatch[1]
             : String(index + 1).padStart(4, "0");
 
-          const fechaMatch = contenidoLimpio.match(
+          const fechaMatch = resumen.contenido.match(
             /(\d{1,2}\s+de\s+\w+\s+de\s+\d{4})/i
           );
           const fechaTexto = fechaMatch
@@ -825,11 +941,7 @@ const PaginaCategoriaPDF = ({
               </View>
 
               {/* CONTENIDO */}
-              {lineas.map((linea, idx) => (
-                <Text key={idx} style={styles.ordenanzaContenido}>
-                  {linea}
-                </Text>
-              ))}
+              <View>{renderHTMLToPDF(resumen.contenido)}</View>
             </View>
           );
         })}
