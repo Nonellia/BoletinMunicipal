@@ -11,6 +11,8 @@ import { fontSans } from "@/config/fonts";
 import Header from "@/components/navbar";
 import Footer  from "@/components/footer";
 import Sidebar from "@/components/sidebar";
+import { AccessibilityProvider } from "@/components/accessibilityComp/AccessibilityContext";
+import { GlobalAccessibilityMenu } from "@/components/accessibilityComp/GlobalAccessibilityMenu";
 
 export const metadata: Metadata = {
   title: {
@@ -45,8 +47,9 @@ export default function RootLayout({
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+          <AccessibilityProvider>
             <Header />
-                  {/* <Sidebar
+            {/* <Sidebar
         activeForm={activeForm}
         onFormSelect={setActiveForm}
         className=""
@@ -54,7 +57,9 @@ export default function RootLayout({
             <main className="">
               {children}
             </main>
+            <GlobalAccessibilityMenu />
             <Footer />
+          </AccessibilityProvider>
         </Providers>
       </body>
       

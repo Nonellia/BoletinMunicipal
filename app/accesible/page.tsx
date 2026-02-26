@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AccessibilityControls } from "@/components/accessibilityComp/textComp/accessibilityControlls";
-import { useAccessibilitySettings } from "@/components/accessibilityComp/textComp/useAccessibilitySettings";
+import { useAccessibility } from "@/components/accessibilityComp/AccessibilityContext";
+// import { useAccessibilitySettings } from "@/components/accessibilityComp/textComp/useAccessibilitySettings"; // Deprecated local hook
 import { useTextProcessor } from "@/components/accessibilityComp/textComp/procesadorTexto";
 import { useAudioController } from "@/components/accessibilityComp/audioComp/audioController";
 import { Card, CardHeader, CardBody, Spinner } from "@heroui/react";
@@ -11,14 +12,15 @@ import { MobileAudioPlayer } from "@/components/accessibilityComp/audioComp/mobi
 import { MobileAdvancedAudioControls } from "@/components/accessibilityComp/audioComp/mobileAdvancedAudioControls";
 import { DebugInfo } from "@/components/accessibilityComp/textComp/debugInfo";
 
-export default function AccesiblePage() {
+// Componente interno que usa useSearchParams
+function AccesibleContent() {
   const searchParams = useSearchParams();
   const boletinId = searchParams.get("boletin");
   const [boletinData, setBoletinData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Accesibilidad visual
-  const accessibility = useAccessibilitySettings();
+  // Accesibilidad visual global
+  const { settings, updateSetting, resetSettings, applyTheme } = useAccessibility();
 
   // Procesador de texto
   const textProcessor = useTextProcessor();
@@ -96,15 +98,16 @@ export default function AccesiblePage() {
     }
     return text;
   };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[0.4fr_1.5fr] gap-6 p-6">
       {/* === SIDEBAR izq === */}
       <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg shadow-md space-y-4 overflow-y-auto max-h-[90vh]">
         <AccessibilityControls
-          settings={accessibility.settings}
-          onUpdateSetting={accessibility.updateSetting}
-          onReset={accessibility.resetSettings}
-          onToggleHighContrast={accessibility.applyHighContrast}
+          settings={settings}
+          onUpdateSetting={updateSetting}
+          onReset={resetSettings}
+          onToggleHighContrast={() => applyTheme(settings.highContrast ? "light" : "high-contrast")}
         />
         {/* Controles avanzados de audio para móvil */}
         <MobileAdvancedAudioControls
@@ -131,11 +134,11 @@ export default function AccesiblePage() {
               <div
                 className="whitespace-pre-wrap break-words"
                 style={{
-                  fontSize: `${accessibility.settings.fontSize}px`,
-                  backgroundColor: accessibility.settings.backgroundColor,
-                  color: accessibility.settings.textColor,
-                  lineHeight: accessibility.settings.lineHeight,
-                  letterSpacing: `${accessibility.settings.letterSpacing}px`,
+                  fontSize: `${settings.fontSize}px`,
+                  backgroundColor: settings.backgroundColor,
+                  color: settings.textColor,
+                  lineHeight: settings.lineHeight,
+                  letterSpacing: `${settings.letterSpacing}px`,
                   padding: "2rem",
                   borderRadius: "0.75rem",
                   minHeight: "400px",
@@ -188,5 +191,18 @@ export default function AccesiblePage() {
         <DebugInfo debugInfo={debugInfo} />
       </div>
     </div>
+  );
+}
+
+// Componente principal envuelto en Suspense
+export default function AccesiblePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner size="lg" label="Cargando página accesible..." />
+      </div>
+    }>
+      <AccesibleContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import BoletinList from "@/components/listado";
 import { Spinner } from "@heroui/spinner";
 
@@ -11,7 +11,7 @@ export default function Home() {
     // Verificar si hay boletines publicados
     const verificarBoletines = async () => {
       try {
-        const response = await fetch("http://localhost:8000/publicados/boletines");
+        const response = await fetch("https://funcionlog.mrg-pruebas.site/publicados/boletines");
         const data = await response.json();
         setBoletinesDisponibles(Array.isArray(data) && data.length > 0);
       } catch (error) {
@@ -97,7 +97,9 @@ export default function Home() {
           {/* Contenedor para BoletinList */}
           <div className="flex justify-center">
             <div className="w-full max-w-screen-2xl">
-              <BoletinList />
+              <Suspense fallback={<div className="flex justify-center p-8"><Spinner size="lg" /></div>}>
+                <BoletinList />
+              </Suspense>
             </div>
           </div>
           

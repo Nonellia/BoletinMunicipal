@@ -23,7 +23,7 @@ export const PDFContentViewer = ({ pdfText, settings, isLoading }: PDFContentVie
     border: `1px solid hsl(var(--nextui-divider))`,
     minHeight: "400px",
     whiteSpace: "pre-wrap" as const,
-    fontFamily: "ui-sans-serif, system-ui, sans-serif",
+    fontFamily: settings.fontFamily || "ui-sans-serif, system-ui, sans-serif",
   }
 
   return (

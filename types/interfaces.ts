@@ -6,6 +6,8 @@ export interface AccessibilitySettings {
   lineHeight: number
   letterSpacing: number
   highContrast: boolean
+  dyslexiaFont: boolean
+  fontFamily: string
 }
 
 export interface VoiceSettings {

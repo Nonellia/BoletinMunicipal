@@ -4,18 +4,18 @@ import {
   FileText,
   Calendar as CalendarIcon,
   Eye,
-  Download,
   Tag,
   Layers
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import clsx from "clsx";
+import { DownloadBoletinButton } from "./DownloadBoletinButton";
 
 interface BoletinCardProps {
   boletin: any;
   isFirst?: boolean;
   onView: (url: string) => void;
+  onViewAccessible: (id: number) => void;
   onDownload: (url: string) => void;
 }
 
@@ -23,44 +23,10 @@ export function BoletinCard({
   boletin,
   isFirst = false,
   onView,
+  onViewAccessible,
   onDownload,
 }: BoletinCardProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  // Función para obtener el PDF del backend
-  const handleDownloadPDF = async () => {
-    setLoading(true);
-    try {
-      // En el nuevo sistema, el PDF se genera a través de un endpoint específico
-      const res = await fetch(
-        `http://localhost:8000/boletines/${boletin.id_boletin}/pdf`
-      );
-      
-      if (!res.ok) {
-        throw new Error("No se pudo generar el PDF");
-      }
-      
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `boletin_${boletin.edicion}_${new Date(boletin.fecha).toISOString().split('T')[0]}.pdf`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error al descargar PDF:", error);
-      alert("Error al generar el PDF. Intenta nuevamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Función para ver versión accesible
-  const handleViewAccessible = () => {
-    // En el nuevo sistema, podríamos usar un endpoint específico para versión accesible
-    window.open(`/boletines/${boletin.id}/accesible`, "_blank");
-  };
 
   const formatFecha = (fechaString: string) => {
     try {
@@ -114,22 +80,15 @@ export function BoletinCard({
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-gray-600">
                   <CalendarIcon className="w-4 h-4" />
-                  <span className="text-sm">{formatFecha(boletin.fecha)}</span>
+                  <span className="text-sm font-medium">
+                    {formatFecha(boletin.fecha_publicacion)}
+                  </span>
                 </div>
-                
-                {boletin.tipo_boletin && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Layers className="w-4 h-4" />
-                    <span className="text-sm">
-                      Tipo: {boletin.tipo_boletin_nombre || `ID ${boletin.tipo_boletin}`}
-                    </span>
-                  </div>
-                )}
                 
                 <div className="flex items-center gap-2 text-gray-600">
                   <Tag className="w-4 h-4" />
                   <span className="text-sm">
-                    Publicado: {new Date(boletin.fecha_publicacion).toLocaleDateString("es-AR")}
+                    {boletin.tipo_boletin_nombre || `Tipo ID ${boletin.tipo_boletin}`}
                   </span>
                 </div>
               </div>
@@ -170,48 +129,19 @@ export function BoletinCard({
                 "flex items-center justify-center gap-2 py-3",
                 "w-full"
               )}
-              onPress={handleViewAccessible}
+              onPress={() => onViewAccessible(boletin.id_boletin)}
             >
               <Eye className="w-5 h-5" />
               <span>Ver Accesible</span>
             </Button>
 
             {/* Botón Descargar PDF */}
-            <Button
-              size="md"
-              variant="bordered"
-              className={clsx(
-                "border-blue-600 text-blue-600",
-                "hover:bg-blue-50 transition-all duration-200",
-                "shadow-sm hover:shadow-lg",
-                "flex items-center justify-center gap-2 py-3",
-                "w-full"
-              )}
-              onPress={handleDownloadPDF}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span>Generando...</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  <span>Descargar PDF</span>
-                </>
-              )}
-            </Button>
+            <DownloadBoletinButton
+              boletinId={boletin.id_boletin}
+              edicion={boletin.edicion}
+              fecha={boletin.fecha}
+            />
 
-            {/* Botón Detalles */}
-            <Button
-              size="md"
-              variant="light"
-              className="text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-              onPress={() => router.push(`/boletines/${boletin.id}`)}
-            >
-              Ver detalles completos
-            </Button>
           </div>
         </div>
       </CardBody>

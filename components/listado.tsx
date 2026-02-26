@@ -7,8 +7,9 @@ import { SearchBar } from "./SearchBar";
 import { ResultsHeader } from "./ResultsHeader";
 import { YearTabs } from "./YearsTab";
 import { Pagination } from "./paginationComp";
+import { BoletinAccesibleModal } from "./BoletinAccesibleModal";
 
-const API_URL = "http://localhost:8000";
+const API_URL = "https://funcionlog.mrg-pruebas.site";
 
 // Interfaces
 interface TipoBoletin {
@@ -62,6 +63,9 @@ export default function BoletinList() {
   // Paginación
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  // Modal Accesible
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedBoletinId, setSelectedBoletinId] = useState<number | null>(null);
 
   // Función para formatear fechas
   // Función para formatear fechas
@@ -224,7 +228,7 @@ export default function BoletinList() {
     const years = new Set<number>();
     boletines.forEach((boletin) => {
       try {
-        const year = new Date(boletin.fecha).getFullYear();
+        const year = new Date(boletin.fecha_publicacion).getFullYear();
         if (!isNaN(year)) {
           years.add(year);
         }
@@ -233,6 +237,14 @@ export default function BoletinList() {
       }
     });
     return Array.from(years).sort((a, b) => b - a); // Más reciente primero
+  }, [boletines]);
+  
+  // Encontrar el ID del boletín más reciente (absoluto, por fecha_publicacion)
+  const idMasReciente = useMemo(() => {
+    if (boletines.length === 0) return null;
+    return [...boletines].sort((a, b) => 
+      new Date(b.fecha_publicacion).getTime() - new Date(a.fecha_publicacion).getTime()
+    )[0].id;
   }, [boletines]);
 
   // Aplicar filtros
@@ -244,7 +256,7 @@ export default function BoletinList() {
       const year = parseInt(tabActivo);
       filtered = filtered.filter((boletin) => {
         try {
-          const boletinYear = new Date(boletin.fecha).getFullYear();
+          const boletinYear = new Date(boletin.fecha_publicacion).getFullYear();
           return boletinYear === year;
         } catch {
           return false;
@@ -255,31 +267,17 @@ export default function BoletinList() {
     if (fechaSeleccionada) {
       filtered = filtered.filter((boletin) => {
         try {
-          // Crear fecha del boletín con zona horaria Argentina
-          const boletinDate = new Date(boletin.fecha);
-          const boletinArgentina = new Date(
-            boletinDate.getFullYear(),
-            boletinDate.getMonth(),
-            boletinDate.getDate(),
-            12,
-            0,
-            0,
-            0, // Mediodía para evitar problemas de zona horaria
-          );
+          // Crear fecha del boletín (usando fecha_publicacion ya que esa es la que le importa al usuario)
+          // Normalizamos a mediodía UTC para evitar desplazamientos por zona horaria local
+          const bDate = new Date(boletin.fecha_publicacion);
+          const boletinTimestamp = Date.UTC(bDate.getFullYear(), bDate.getMonth(), bDate.getDate());
 
-          // Crear fecha seleccionada con zona horaria Argentina
-          const selectedArgentina = new Date(
-            fechaSeleccionada.getFullYear(),
-            fechaSeleccionada.getMonth(),
-            fechaSeleccionada.getDate(),
-            12,
-            0,
-            0,
-            0,
-          );
+          // Crear fecha seleccionada
+          const sDate = new Date(fechaSeleccionada);
+          const selectedTimestamp = Date.UTC(sDate.getFullYear(), sDate.getMonth(), sDate.getDate());
 
           // Comparar solo las fechas (sin horas)
-          return boletinArgentina.getTime() === selectedArgentina.getTime();
+          return boletinTimestamp === selectedTimestamp;
         } catch {
           return false;
         }
@@ -288,47 +286,56 @@ export default function BoletinList() {
 
     // Filtrar por búsqueda
     if (busqueda.trim()) {
-      const searchTerm = normalizeSearchTerm(busqueda);
+      const searchTerms = normalizeSearchTerm(busqueda).split(" ").filter(t => t.length > 0);
+      
       filtered = filtered.filter((boletin) => {
-        // Normalizar también los campos a buscar
+        // Preparar campos para búsqueda
         const tipoNormalizado = boletin.tipo_boletin_nombre
           ? normalizeSearchTerm(boletin.tipo_boletin_nombre)
           : "";
+        const edicionStr = boletin.edicion.toString();
+        
+        // Formatear fecha para búsqueda (ej: "28 de enero de 2026")
+        const fechaObj = new Date(boletin.fecha);
+        const fechaTexto = normalizeSearchTerm(
+          fechaObj.toLocaleDateString("es-AR", { day: 'numeric', month: 'long', year: 'numeric' })
+        );
+        const anioTexto = fechaObj.getFullYear().toString();
 
-        // Buscar en tipo de boletín
-        if (tipoNormalizado.includes(searchTerm)) {
-          return true;
-        }
+        // Verificar que CADA término de búsqueda aparezca en ALGÚN campo (Lógica AND)
+        return searchTerms.every(term => {
+          // 1. Coincidencia en Tipo de Boletín
+          if (tipoNormalizado.includes(term)) return true;
 
-        // Buscar en número de edición
-        if (boletin.edicion.toString().includes(searchTerm)) {
-          return true;
-        }
+          // 2. Coincidencia en Edición
+          if (edicionStr.includes(term)) return true;
 
-        // Buscar en categorías
-        if (
-          boletin.categorias_principales?.some((cat) =>
-            normalizeSearchTerm(cat).includes(searchTerm),
-          )
-        ) {
-          return true;
-        }
+          // 3. Coincidencia en Fecha (texto completo o año)
+          if (fechaTexto.includes(term) || anioTexto.includes(term)) return true;
 
-        // Buscar en contenido de resúmenes
-        if (
-          boletin.resumenes_publicados?.some(
-            (resumen) =>
-              normalizeSearchTerm(resumen.contenido).includes(searchTerm) ||
-              (resumen.categoria?.nombre &&
-                normalizeSearchTerm(resumen.categoria.nombre).includes(
-                  searchTerm,
-                )),
-          )
-        ) {
-          return true;
-        }
+          // 4. Coincidencia en Categorías
+          if (
+            boletin.categorias_principales?.some((cat) =>
+              normalizeSearchTerm(cat).includes(term),
+            )
+          ) {
+            return true;
+          }
 
-        return false;
+          // 5. Coincidencia en Contenido de Resúmenes
+          if (
+            boletin.resumenes_publicados?.some(
+              (resumen) =>
+                normalizeSearchTerm(resumen.contenido).includes(term) ||
+                (resumen.categoria?.nombre &&
+                  normalizeSearchTerm(resumen.categoria.nombre).includes(term)),
+            )
+          ) {
+            return true;
+          }
+
+          return false;
+        });
       });
     }
 
@@ -367,9 +374,9 @@ export default function BoletinList() {
     window.open(url, "_blank");
   };
 
-  const handleDownload = async (boletinId: number) => {
-    // Aquí puedes implementar la descarga del PDF
-    console.log("Descargar boletín:", boletinId);
+  const handleViewAccessible = (boletinId: number) => {
+    setSelectedBoletinId(boletinId);
+    setModalOpen(true);
   };
 
   const handleClearAllFilters = () => {
@@ -585,9 +592,10 @@ export default function BoletinList() {
               <BoletinCard
                 key={boletin.id}
                 boletin={boletin}
-                isFirst={currentPage === 1 && index === 0}
+                isFirst={boletin.id === idMasReciente}
                 onView={handleView}
-                onDownload={() => handleDownload(boletin.id)}
+                onDownload={() => {}}
+                onViewAccessible={handleViewAccessible}
               />
             ))}
           </div>
@@ -620,6 +628,11 @@ export default function BoletinList() {
           onClearFilters={handleClearAllFilters}
         />
       </div>
+      <BoletinAccesibleModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        boletinId={selectedBoletinId} 
+      />
     </div>
   );
 }

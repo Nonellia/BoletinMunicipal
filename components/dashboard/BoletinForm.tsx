@@ -52,13 +52,13 @@ export default function BoletinForm({ boletin, onSave }: BoletinFormProps) {
       let res;
       if (boletin?.idboletin) {
         // Editar boletín existente
-        res = await fetch(`http://localhost:8000/boletin/${boletin.idboletin}`, {
+        res = await fetch(`https://funcionlog.mrg-pruebas.site/boletin/${boletin.idboletin}`, {
           method: "PUT",
           body: formData,
         });
       } else {
         // Crear nuevo boletín
-        res = await fetch("http://localhost:8000/boletin/upload", {
+        res = await fetch("https://funcionlog.mrg-pruebas.site/boletin/upload", {
           method: "POST",
           body: formData,
         });
@@ -108,7 +108,7 @@ export default function BoletinForm({ boletin, onSave }: BoletinFormProps) {
           <p className="text-sm text-gray-600">
             Archivo actual:{" "}
             <a
-              href={`http://localhost:8000/items/${boletin.archivo}`}
+              href={`http://https://funcionlog.mrg-pruebas.site/items/${boletin.archivo}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 underline"

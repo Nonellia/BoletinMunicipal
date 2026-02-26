@@ -2,7 +2,7 @@
 // Configuración centralizada de la API
 
 export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://funcionlog.mrg-pruebas.site',
   timeout: 10000,
   endpoints: {
     // Boletines publicados

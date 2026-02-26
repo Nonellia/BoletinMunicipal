@@ -3,13 +3,44 @@ import React, { useState, useEffect } from 'react';
 import { Search, FileText, BookOpen, Calendar, Filter, X, ChevronDown, ChevronRight, Download, Eye } from 'lucide-react';
 
 export default function BibliotecaDocumentos() {
-  const [documentos, setDocumentos] = useState([]);
+  interface Documento {
+    id: number;
+    id_boletin: number;
+    categoria_id: number;
+    numero_documento?: string;
+    numero_completo?: string;
+    contenido?: string;
+    anio_publicacion: number;
+    fecha_emision?: string;
+    lugar_emision?: string;
+    estado?: string;
+    paginas?: number;
+    articulos?: Articulo[];
+    boletin_info?: any;
+    categoria_info?: any;
+  }
+
+  interface Articulo {
+    id: number;
+    documento_id: number;
+    contenido?: string;
+    numero_articulo?: string;
+    orden: number;
+    tipo_articulo?: string;
+  }
+
+  interface CategoriaDoc {
+    id: number;
+    nombre: string;
+  }
+
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('todos');
   const [anioFiltro, setAnioFiltro] = useState('todos');
-  const [expandedDocs, setExpandedDocs] = useState(new Set());
-  const [categorias, setCategorias] = useState([]);
+  const [expandedDocs, setExpandedDocs] = useState<Set<number>>(new Set());
+  const [categorias, setCategorias] = useState<CategoriaDoc[]>([]);
   const [vista, setVista] = useState('documentos'); // 'documentos' o 'articulos'
 
   useEffect(() => {
@@ -21,29 +52,29 @@ export default function BibliotecaDocumentos() {
     try {
       // Cargar documentos
       const resDocumentos = await fetch('http://127.0.0.1:8000/documento/');
-      const docsData = await resDocumentos.json();
+      const docsData: any[] = await resDocumentos.json();
 
       // Cargar artículos
       const resArticulos = await fetch('http://127.0.0.1:8000/articulo/');
-      const articulosData = await resArticulos.json();
+      const articulosData: any[] = await resArticulos.json();
 
       // Cargar categorías
       const resCategorias = await fetch('http://127.0.0.1:8000/categoriadocumento/');
-      const categoriasData = await resCategorias.json();
+      const categoriasData: CategoriaDoc[] = await resCategorias.json();
       setCategorias(categoriasData);
 
       // Cargar boletines para obtener información adicional
       const resBoletines = await fetch('http://127.0.0.1:8000/boletin/');
-      const boletinesData = await resBoletines.json();
+      const boletinesData: any[] = await resBoletines.json();
 
       // Asociar artículos a documentos y enriquecer con información
-      const documentosCompletos = docsData.map(doc => {
-        const boletin = boletinesData.find(b => b.id === doc.id_boletin);
-        const categoria = categoriasData.find(c => c.id === doc.categoria_id);
+      const documentosCompletos: Documento[] = docsData.map((doc: any) => {
+        const boletin = boletinesData.find((b: any) => b.id === doc.id_boletin);
+        const categoria = categoriasData.find((c: CategoriaDoc) => c.id === doc.categoria_id);
         
         return {
           ...doc,
-          articulos: articulosData.filter(art => art.documento_id === doc.id),
+          articulos: articulosData.filter((art: any) => art.documento_id === doc.id),
           boletin_info: boletin,
           categoria_info: categoria
         };
@@ -57,7 +88,7 @@ export default function BibliotecaDocumentos() {
     }
   };
 
-  const toggleDocumento = (docId) => {
+  const toggleDocumento = (docId: number) => {
     const newExpanded = new Set(expandedDocs);
     if (newExpanded.has(docId)) {
       newExpanded.delete(docId);
@@ -68,13 +99,13 @@ export default function BibliotecaDocumentos() {
   };
 
   // Filtrado de documentos
-  const documentosFiltrados = documentos.filter(doc => {
+  const documentosFiltrados = documentos.filter((doc: Documento) => {
     // Filtro de búsqueda
     const cumpleBusqueda = busqueda.trim() === '' || 
       doc.numero_documento?.toLowerCase().includes(busqueda.toLowerCase()) ||
       doc.numero_completo?.toLowerCase().includes(busqueda.toLowerCase()) ||
       doc.contenido?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      doc.articulos?.some(art => 
+      doc.articulos?.some((art: Articulo) => 
         art.contenido?.toLowerCase().includes(busqueda.toLowerCase()) ||
         art.numero_articulo?.toLowerCase().includes(busqueda.toLowerCase())
       );
@@ -91,10 +122,10 @@ export default function BibliotecaDocumentos() {
   });
 
   // Obtener años únicos
-  const aniosUnicos = [...new Set(documentos.map(d => d.anio_publicacion))].sort((a, b) => b - a);
+  const aniosUnicos = [...new Set(documentos.map((d: Documento) => d.anio_publicacion))].sort((a, b) => b - a);
 
   // Estadísticas
-  const totalArticulos = documentos.reduce((sum, doc) => sum + (doc.articulos?.length || 0), 0);
+  const totalArticulos = documentos.reduce((sum: number, doc: Documento) => sum + (doc.articulos?.length || 0), 0);
 
   const limpiarFiltros = () => {
     setBusqueda('');
@@ -102,7 +133,7 @@ export default function BibliotecaDocumentos() {
     setAnioFiltro('todos');
   };
 
-  const resaltarTexto = (texto, query) => {
+  const resaltarTexto = (texto: string | undefined, query: string) => {
     if (!query.trim() || !texto) return texto;
     
     const regex = new RegExp(`(${query})`, 'gi');

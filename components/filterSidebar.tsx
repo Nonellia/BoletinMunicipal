@@ -85,14 +85,15 @@ export function FiltersSidebar({
     const dates = new Set<string>();
     
     boletines.forEach((boletin) => {
-      if (boletin.fecha) {
+      // Usar fecha_publicacion para los highlights del calendario
+      if (boletin.fecha_publicacion) {
         try {
-          const dateStr = parseDateFromServer(boletin.fecha);
+          const dateStr = parseDateFromServer(boletin.fecha_publicacion);
           if (dateStr) {
             dates.add(dateStr);
           }
         } catch (error) {
-          console.error("Error procesando fecha:", boletin.fecha, error);
+          console.error("Error procesando fecha:", boletin.fecha_publicacion, error);
         }
       }
     });

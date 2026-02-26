@@ -1,217 +1,168 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardBody, CardHeader, Input, Button, Tabs, Tab, Alert } from "@heroui/react";
+import { useAuth } from "@/context/auth-context";
+import axios from "axios";
 
-const LoginRegister = () => {
+const API_URL = "https://funcionlog.mrg-pruebas.site";
+
+const LoginPage = () => {
   const router = useRouter();
-  const [nombreCompleto, setNombreCompleto] = useState("");
-  const [ndni, setNdni] = useState(0);
-  const [tipoUsuario, setTipoUsuario] = useState(0);
-  const [usuario, setUsuario] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [isRegister, setIsRegister] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Login form state
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Register form state
+  const [regUsername, setRegUsername] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage("");
-    setLoading(true);
+    setIsLoading(true);
+    setError(null);
 
-    if (!usuario || !password || (isRegister && !nombreCompleto)) {
-      setMessage("Por favor, completa todos los campos.");
-      setLoading(false);
-      return;
-    }
-
-    const endpoint = isRegister
-      ? "http://127.0.0.1:8000/register"
-      : "http://127.0.0.1:8000/login";
-
-    const bodyData = isRegister
-      ? { nombre_completo: nombreCompleto, ndni, tipo_usuario: tipoUsuario, usuario, password }
-      : { usuario, password };
-
-    // console.log("Datos enviados:", bodyData);
+    const formData = new FormData();
+    formData.append("username", loginUsername);
+    formData.append("password", loginPassword);
 
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(bodyData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Error en el servidor");
-      }
-
-      const data = await response.json();
-      // console.log("Respuesta del servidor:", data);
-
-      setMessage(
-        isRegister
-          ? "Usuario registrado exitosamente"
-          : "Inicio de sesión exitoso"
-      );
-      if (!isRegister) {
-        // Guardar usuario en localStorage para sesión
-        localStorage.setItem("usuario", usuario);
-        // Redirigir a /gestor
-        router.replace("/gestor");
-      }
-    } catch (err) {
-      const errorMsg =
-        err instanceof Error
-          ? err.message
-          : isRegister
-          ? "Error al registrar usuario"
-          : "Error al iniciar sesión";
-      setMessage(errorMsg);
+      const response = await axios.post(`${API_URL}/login`, formData);
+      login(response.data.access_token);
+      router.push("/formularios");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Error al iniciar sesión");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await axios.post(`${API_URL}/register`, {
+        username: regUsername,
+        email: regEmail,
+        password: regPassword,
+      });
+      setSuccess("Usuario registrado exitosamente. Ahora puedes iniciar sesión.");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Error al registrarse");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-full max-w-sm"
-      >
-        <h1 className="text-2xl font-bold mb-4 text-center">
-          {isRegister ? "Registrar Usuario" : "Iniciar Sesión"}
-        </h1>
+    <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-tr from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="flex flex-col gap-1 items-center pb-0">
+          <h1 className="text-3xl font-bold text-indigo-700">Boletín Municipal</h1>
+          <p className="text-default-500">Gestión de documentos y boletines</p>
+        </CardHeader>
+        <CardBody>
+          <Tabs fullWidth aria-label="Opciones de acceso" color="primary">
+            <Tab key="login" title="Ingresar">
+              <form onSubmit={handleLogin} className="flex flex-col gap-4 mt-4">
+                <Input
+                  label="Usuario"
+                  placeholder="Tu nombre de usuario"
+                  variant="bordered"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Contraseña"
+                  placeholder="********"
+                  type="password"
+                  variant="bordered"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+                <Button 
+                    type="submit" 
+                    color="primary" 
+                    variant="shadow" 
+                    isLoading={isLoading}
+                    className="font-bold"
+                >
+                  Iniciar Sesión
+                </Button>
+              </form>
+            </Tab>
+            <Tab key="register" title="Registrarse">
+              <form onSubmit={handleRegister} className="flex flex-col gap-4 mt-4">
+                <Input
+                  label="Usuario"
+                  placeholder="Nombre de usuario elegido"
+                  variant="bordered"
+                  value={regUsername}
+                  onChange={(e) => setRegUsername(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Correo Electrónico"
+                  placeholder="ejemplo@municipio.gov"
+                  type="email"
+                  variant="bordered"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Contraseña"
+                  placeholder="Min. 8 caracteres"
+                  type="password"
+                  variant="bordered"
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  required
+                />
+                <Button 
+                    type="submit" 
+                    color="secondary" 
+                    variant="shadow" 
+                    isLoading={isLoading}
+                    className="font-bold"
+                >
+                  Crear Cuenta
+                </Button>
+              </form>
+            </Tab>
+          </Tabs>
 
-        {message && (
-          <p
-            className={`text-sm mb-4 text-center ${
-              message.includes("exitosamente")
-                ? "text-green-500"
-                : "text-red-500"
-            }`}
-          >
-            {message}
-          </p>
-        )}
+          {error && (
+            <Alert color="danger" title="Error" className="mt-4">
+              {error}
+            </Alert>
+          )}
 
-        {isRegister && (
-          <>
-            <div className="mb-4">
-              <label
-                htmlFor="nombreCompleto"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Nombre Completo
-              </label>
-              <input
-                id="nombreCompleto"
-                type="text"
-                value={nombreCompleto}
-                onChange={(e) => setNombreCompleto(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div className="mb-4">
-              <label
-                htmlFor="ndni"
-                className="block text-sm font-medium text-gray-700"
-              >
-                DNI
-              </label>
-              <input
-                id="ndni"
-                type="number"
-                value={ndni}
-                onChange={(e) => setNdni(Number(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div className="mb-4">
-              <label
-                htmlFor="tipoUsuario"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Tipo de Usuario
-              </label>
-              <input
-                id="tipoUsuario"
-                type="number"
-                value={tipoUsuario}
-                onChange={(e) => setTipoUsuario(Number(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                required
-              />
-            </div>
-          </>
-        )}
-
-        <div className="mb-4">
-          <label
-            htmlFor="usuario"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Usuario
-          </label>
-          <input
-            id="usuario"
-            type="text"
-            value={usuario}
-            onChange={(e) => setUsuario(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Contraseña
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          disabled={loading}
-        >
-          {loading
-            ? "Procesando..."
-            : isRegister
-            ? "Registrar"
-            : "Ingresar"}
-        </button>
-
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            className="text-indigo-600 hover:underline text-sm"
-            onClick={() => setIsRegister(!isRegister)}
-          >
-            {isRegister
-              ? "¿Ya tienes cuenta? Inicia sesión"
-              : "¿No tienes cuenta? Regístrate"}
-          </button>
-        </div>
-      </form>
+          {success && (
+            <Alert color="success" title="Completado" className="mt-4">
+              {success}
+            </Alert>
+          )}
+        </CardBody>
+      </Card>
+      
+      <p className="mt-8 text-default-400 text-sm">
+        © 2026 Municipalidad de Nonellia - Sistema Legislativo
+      </p>
     </div>
   );
 };
 
-export default LoginRegister;
+export default LoginPage;
